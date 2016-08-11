@@ -1,0 +1,38 @@
+# ----- Load modules --------------------------
+
+module load netcdf/4.2.1-pgf90
+module list 
+
+set tool = p2s
+
+# ----- Set libraries and includes ------------
+
+set libs   = "-L ${LAGRANTO}/lib"
+set libs   = "${libs} -lcdfio" 
+set libs   = "${libs} -lcdfplus" 
+
+set ncdf_incs  = `nc-config --fflags`
+set ncdf_libs  = `nc-config --flibs`
+
+# ----- Compile --------------------- ----------
+
+\rm -f p2s.o
+\rm -f libcalvar.o
+\rm -f libgm2em.o
+echo "pgf90 -c p2s.f       ${ncdf_incs}"  
+      pgf90 -c p2s.f       ${ncdf_incs}
+echo "pgf90 -c libgm2em.f  ${ncdf_incs}"  
+      pgf90 -c libgm2em.f  ${ncdf_incs}
+echo "pgf90 -c libcalvar.f ${ncdf_incs}"  
+      pgf90 -c libcalvar.f ${ncdf_incs}
+      
+\rm -f p2s
+echo "pgf90 -o p2s p2s.o libgm2em.o libcalvar.o ${libs} ${ncdf_libs}"        
+      pgf90 -o p2s p2s.o libgm2em.o libcalvar.o ${libs} ${ncdf_libs}
+
+if ( ! -f p2s ) then
+  echo "ERROR: compilation of p2s failed... exit"
+  exit 1
+endif
+
+exit 0

@@ -1,0 +1,209 @@
+#!/bin/csh
+#+
+# grb2cdf is used to convert a GRIB file (from the ECMWF) to NetCDF
+# fast version!!
+#
+# Usage : grb2cdf [-v varfile] [-y] [-s] [-r] [-m mdv] [-n] [-c constfn] -o cdffilename grib-files
+#
+#
+# Options:
+#
+#	-v varfile	where varfile is the path of the variable file to
+#			be used (the default is ~henry/ecmwf/etc/varfile).
+#
+#	-y		for MARS retrieves from CRAY (old version)
+#			don't give that option for MARS retrieves from
+#			ecgate1 (new version)
+#
+#	-s		single files for every date (in this case the argument
+#			given with the -o option is complemented with the
+#			date: e.g. -o sst gives file names like sst970606_00
+#
+#	-r		rotate hemispheric data such that domain is from 0 to
+#			360 deg
+#
+#	-l		do not close periodic data
+#
+#       -m mdv		where is the missing-data value for the NetCDF file
+#			(the default is -999.98999).
+#
+#	-c constfn	where constfn is the of the NetCDF constants file
+#			if this option is not given, the constfn is defined
+#			as 'cdffilename_cst'
+#			if constn='no' then no constants file is written
+#
+#	-o cdffilename	where cdffilename is the name of the NetCDF file
+#			to be written
+#
+# Author: H.Wernli, 29. June 1993
+#-
+
+set USAGE = "Usage: fgrb2cdf_api [-v varfile] [-y] [-s] [-r] [-m mdv] [-n] [-c constfn] [-3 3dim vars] [-2 2dim vars] -o cdffilename -g grib-files"
+set varfile = /home/ms/ch/chw/program.ecgb/grbtocdf/etc/varf_api
+set mdv = -999.98999
+set version = 1
+set rotate = 0
+set noclose = 0
+set single = 0
+set writecst = yes
+set constfn = default
+set cdfname =
+set files =
+set nv = 0
+
+set varinp=${PWD}/grb2cdf_$$
+\rm -f $varinp
+
+#set argv = `getopt v:ysro:m:lnc:3 $*`
+#if ( $status != 0 ) then
+#  echo "$USAGE"
+#  exit 1
+#endif
+
+while ( $#argv > 0)
+
+  switch ($argv[1])
+
+    case -v:
+      set varfile = $argv[2]
+      shift; shift
+    breaksw
+
+    case -m:
+      set mdv = $argv[2]
+      shift; shift
+    breaksw
+ 
+    case -n:
+      set writecst = no
+      shift
+    breaksw
+
+    case -y:
+      set version = 0
+      shift
+    breaksw
+
+    case -s:
+      set single = 1
+      shift
+    breaksw
+
+    case -r:
+      set rotate = 1
+      shift
+    breaksw
+
+    case -l:
+      set noclose = 1
+      shift
+    breaksw
+
+    case -c:
+      set constfn = $argv[2]
+      shift; shift
+    breaksw
+
+    case -o:
+      set cdfname = $argv[2]
+      shift; shift
+    breaksw
+
+    case -3:
+      shift
+      set char=""
+      while ( ( $char != - ) && ( $#argv > 0 ) )
+        @ nv ++
+        if ( ! -f $varinp ) touch $varinp
+        echo $argv[1] >> $varinp
+        echo 3 >> $varinp
+        shift
+        if ( $#argv > 0 ) set char=`echo $argv[1] | cut -c 1`
+      end
+    breaksw
+
+    case -2:
+      shift
+      set char=""
+      while ( ( $char != - ) && ( $#argv > 0 ) )
+        @ nv ++
+        if ( ! -f $varinp ) touch $varinp
+        echo $argv[1] >> $varinp
+        echo 2 >> $varinp
+        shift
+        if ( $#argv > 0 ) set char=`echo $argv[1] | cut -c 1`
+      end
+    breaksw
+
+    case -g:
+      shift
+      set files = "`echo $argv`"
+      while ( $#argv > 0 )
+        shift
+      end
+    breaksw
+
+  endsw
+end
+
+if ( $nv > 0 ) then
+  echo $nv >! fort.16
+  cat $varinp >> fort.16
+  \rm -f $varinp
+endif
+
+if ( "`echo $files`" == "" ) then
+  echo "grb2cdf: No grib files specified"
+  echo "$USAGE"
+  exit 2
+endif
+
+if ( $cdfname == "" ) then
+  echo "grb2cdf: No name for NetCDF file specified"
+  echo "$USAGE"
+  exit 2
+endif
+
+if ( ! -r $varfile ) then
+  echo "grb2cdf: Can't access $varfile"
+  echo "$USAGE"
+  exit 2
+endif
+
+foreach i ( $files )
+  if ( ! -r $i ) then
+    echo "grb2cdf: Can't access grib-file $i"
+    exit 2
+  endif
+end
+
+\rm -f fort.14
+\rm -f fort.15
+
+touch fort.15
+echo $cdfname >> fort.15
+echo $writecst >> fort.15
+echo $constfn >> fort.15
+echo $mdv >> fort.15
+echo $version >> fort.15
+echo $rotate >> fort.15
+echo $noclose >> fort.15
+echo $single >> fort.15
+
+ln -s $varfile fort.14
+
+set count=0
+foreach i ( $files )
+  \rm -f fort.11
+  ln -s $i fort.11
+  if (( $count > 0 ) && ( $nv > 0 )) then
+    echo 0 >! fort.16
+  endif
+  /net/rossby/lhome/sprenger/tmp/ectest/grbtocdf/fgrbtocdf_api
+  @ count ++
+end
+
+\rm -f fort.11
+\rm -f fort.14
+\rm -f fort.15
+#\rm -f fort.16

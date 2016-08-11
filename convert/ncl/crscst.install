@@ -1,0 +1,13 @@
+#!/bin/csh
+
+module load netcdf/4.2.1-pgf90
+module list 
+
+set ncdf_incs  = `nc-config --fflags`
+set ncdf_libs  = `nc-config --flibs`
+
+pgf90 -c libcdfio.f   ${ncdf_incs}   
+pgf90 -c libcdfplus.f ${ncdf_incs}  
+pgf90 -c crecst.f     ${ncdf_incs}  
+
+pgf90 -o crecst crecst.o libcdfio.o libcdfplus.o ${ncdf_libs}

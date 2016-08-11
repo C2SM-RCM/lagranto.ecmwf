@@ -1,0 +1,7 @@
+# varfile      !!! don't use tabs in this file
+T             t          105    K            1.00000  -273.15      2  00     1  1    0   temperature
+U             u          105    m/s          1.00000     0.00      2  00     1  1    0   zonal wind
+V             v          105    m/s          1.00000     0.00      2  00     1  1    0   meridional wind
+OMEGA         w          105    Pa/s         1.00000     0.00      2  00     1  1    0   vert.velocity
+Q             q          105    kg/kg        1.00000     0.00      2  00     1  1    0   spec.hum.
+PS            sp           1    hPa          0.01000     0.00      1  00     1  2    0   surface pressure
